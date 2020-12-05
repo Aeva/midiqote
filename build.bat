@@ -1,0 +1,1 @@
+pyinstaller -F -c --distpath="." bard-on.py

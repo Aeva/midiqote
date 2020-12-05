@@ -11,7 +11,7 @@ device_name = 'USB Midi Cable 1'
 device_root = 48
 device_span = 25
 
-all_symbols = string.ascii_lowercase + string.digits + "!"
+all_symbols = string.ascii_lowercase + string.digits + "."
 bass = all_symbols[:device_span]
 trebble = all_symbols[12:][:device_span]
 
