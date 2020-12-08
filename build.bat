@@ -1,1 +1,2 @@
-pyinstaller -F -c --distpath="." bard-on.py
+pyinstaller --onefile --noconsole --distpath="." midiqote.py
+pause
