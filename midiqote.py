@@ -73,8 +73,7 @@ class fancy_panel(wx.Panel):
 	
 	def repaint(self, event):
 		dc = wx.PaintDC(self)
-		width, height = dc.GetSize()
-		dc.DrawBitmap(self.bg_img, 0, height - 480)
+		dc.DrawBitmap(self.bg_img, 0, -39)
 
 if __name__ == "__main__":
 	bard = midiqote()
@@ -98,7 +97,7 @@ if __name__ == "__main__":
 	device_picker = wx.ComboBox(panel, choices=midi_inputs, style=wx.CB_DROPDOWN|wx.CB_READONLY)
 	device_picker.Bind(wx.EVT_COMBOBOX, bard.device_changed)
 	device_picker.SetSelection(0)
-	vbox.Add(device_picker, border=50, flag=wx.TOP)
+	vbox.Add(device_picker, border=100, flag=wx.TOP)
 
 	midi_ctrl_checkbox = wx.CheckBox(panel, label="All MIDI control changes\nas octave up/down.", style=wx.CHK_2STATE)
 	vbox.Add(midi_ctrl_checkbox, border=10, flag=wx.TOP)
@@ -106,7 +105,7 @@ if __name__ == "__main__":
 	midi_prog_checkbox = wx.CheckBox(panel, label="All MIDI program changes\nas octave up/down.", style=wx.CHK_2STATE)
 	vbox.Add(midi_prog_checkbox, border=10, flag=wx.TOP)
 
-	rockband_checkbox = wx.CheckBox(panel, label="Rockband MIDI Controller\nStart Select as octave up/down.", style=wx.CHK_2STATE)
+	rockband_checkbox = wx.CheckBox(panel, label="Rockband MIDI controller\nstart/select as octave up/down.", style=wx.CHK_2STATE)
 	vbox.Add(rockband_checkbox, border=10, flag=wx.TOP)
 
 	middle_c_hbox = wx.BoxSizer(wx.HORIZONTAL)
