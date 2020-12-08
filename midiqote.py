@@ -26,7 +26,7 @@ PITCH_BEND = 0xE
 SYSETM = 0xF
 
 
-class bard_on:
+class midiqote:
 	def __init__(self):
 		self.use_trebble = True
 		self.current_port = -1
@@ -57,7 +57,7 @@ class bard_on:
 			except rtmidi._rtmidi.SystemError:
 				self.current_port = -1
 				event.GetEventObject().SetSelection(-1)
-				wx.MessageBox("Bard Error:\nUnable to open MIDI input :(", "Bard-On!", wx.OK | wx.ICON_ERROR)
+				wx.MessageBox("Bard Error:\nUnable to open MIDI input :(", "Midiqo'te", wx.OK | wx.ICON_ERROR)
 
 	def shutdown(self):
 		if self.current_port != -1:
@@ -74,20 +74,20 @@ class fancy_panel(wx.Panel):
 	def repaint(self, event):
 		dc = wx.PaintDC(self)
 		width, height = dc.GetSize()
-		dc.DrawBitmap(self.bg_img, (width - 640) // 2, height - 480)
+		dc.DrawBitmap(self.bg_img, 0, height - 480)
 
 if __name__ == "__main__":
-	bard = bard_on()
+	bard = midiqote()
 	midi_inputs = bard.midiin.get_ports()
 
 	if len(midi_inputs) == 0:
 		app = wx.App()
-		wx.MessageBox("Fatal Bard Error:\nNo MIDI input devices found.", "Bard-On!", wx.OK | wx.ICON_ERROR)
+		wx.MessageBox("Fatal Bard Error:\nNo MIDI input devices found.", "Midiqo'te", wx.OK | wx.ICON_ERROR)
 		app.MainLoop()
 		exit()
 
 	app = wx.App()
-	frame = wx.Frame(None, title="Bard-On!")
+	frame = wx.Frame(None, title="Midiqo'te")
 	frame.SetMinSize(wx.Size(640, 480))
 	frame.SetMaxSize(wx.Size(640, 480))
 	panel = fancy_panel(frame)
