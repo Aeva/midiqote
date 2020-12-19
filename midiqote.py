@@ -2,11 +2,8 @@ import time
 import string
 from threading import Thread, Lock, Event
 import pygame.midi as midi
-import win32com.client # via package pywin32
+import win32api # via package pywin32
 import wx # via package wxPython
-
-
-shell = win32com.client.Dispatch("WScript.Shell")
 
 
 NOTE_ON = 0x9
@@ -19,7 +16,8 @@ PITCH_BEND = 0xE
 SYSETM = 0xF
 MIDDLE_C = 60
 ROOT_NOTE = 48
-SYMBOLS = string.ascii_lowercase + string.digits + "."
+#SYMBOLS = string.ascii_lowercase + string.digits + "."
+SYMBOLS = list(range(0x41, 0x5B)) + list(range(0x30, 0x3A)) + [0xBE]
 
 
 class midiqote(Thread):
@@ -70,7 +68,12 @@ class midiqote(Thread):
 						note = data1 + self.transpose + self.octave
 						if note >= ROOT_NOTE and note <= (ROOT_NOTE + 37):
 							symbol = SYMBOLS[note-ROOT_NOTE]
-							shell.SendKeys(symbol, 0)
+							win32api.keybd_event(symbol, 0, 0, 0)
+					elif message is NOTE_OFF:
+						note = data1 + self.transpose + self.octave
+						if note >= ROOT_NOTE and note <= (ROOT_NOTE + 37):
+							symbol = SYMBOLS[note-ROOT_NOTE]
+							win32api.keybd_event(symbol, 0, 2, 0)
 					elif self.use_rock_octave and message is SYSETM:
 						self.octave = 0 if (channel & 4) == 4 else 12
 
@@ -123,7 +126,10 @@ if __name__ == "__main__":
 	input_devices = [(i, d[1]) for (i, d) in enumerate(all_devices) if d[2] == 1]
 	input_names = [name for (i, name) in input_devices]
 	default_device = midi.get_default_input_id()
-	default_selection = [i for (i, name) in input_devices].index(default_device)
+	try:
+		default_selection = [i for (i, name) in input_devices].index(default_device)
+	except ValueError:
+		default_selection = None
 
 	midi_thread = midiqote(input_devices)
 	midi_thread.start()
