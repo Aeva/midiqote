@@ -2,7 +2,7 @@ import time
 import string
 from threading import Thread, Lock, Event
 import pygame.midi as midi
-import win32api # via package pywin32
+import win32api, win32con, win32process # via package pywin32
 import wx # via package wxPython
 
 
@@ -64,15 +64,15 @@ class midiqote(Thread):
 
 					message = status >> 4
 					channel = status & 0xF
-					if message is NOTE_ON:
+					if message is NOTE_ON or message is NOTE_OFF:
 						note = data1 + self.transpose + self.octave
-						if note >= ROOT_NOTE and note <= (ROOT_NOTE + 37):
-							symbol = SYMBOLS[note-ROOT_NOTE]
+						note = max(note, ROOT_NOTE)
+						note = min(note, ROOT_NOTE + 36)
+						symbol = SYMBOLS[note-ROOT_NOTE]
+						if message is NOTE_ON:
 							win32api.keybd_event(symbol, 0, 0, 0)
-					elif message is NOTE_OFF:
-						note = data1 + self.transpose + self.octave
-						if note >= ROOT_NOTE and note <= (ROOT_NOTE + 37):
-							symbol = SYMBOLS[note-ROOT_NOTE]
+							time.sleep(0.03)
+						else:
 							win32api.keybd_event(symbol, 0, 2, 0)
 					elif self.use_rock_octave and message is SYSETM:
 						self.octave = 0 if (channel & 4) == 4 else 12
@@ -121,6 +121,10 @@ class fancy_panel(wx.Panel):
 
 
 if __name__ == "__main__":
+	pid = win32api.GetCurrentProcessId()
+	handle = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS, True, pid)
+	win32process.SetPriorityClass(handle, win32process.REALTIME_PRIORITY_CLASS)
+
 	midi.init()
 	all_devices = [midi.get_device_info(i) for i in range(midi.get_count())]
 	input_devices = [(i, d[1]) for (i, d) in enumerate(all_devices) if d[2] == 1]
