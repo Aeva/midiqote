@@ -37,6 +37,7 @@ class midiqote(Thread):
 		self.use_rock_octave = False
 		self.transpose = 0
 		self.octave = 0
+		self.period = 12
 
 	def run(self):
 		self.device_changed.wait()
@@ -66,6 +67,10 @@ class midiqote(Thread):
 					channel = status & 0xF
 					if message is NOTE_ON or message is NOTE_OFF:
 						note = data1 + self.transpose + self.octave
+						while note < ROOT_NOTE:
+							note += self.period
+						while note > ROOT_NOTE + 36:
+							note -= self.period
 						note = max(note, ROOT_NOTE)
 						note = min(note, ROOT_NOTE + 36)
 						symbol = SYMBOLS[note-ROOT_NOTE]
@@ -106,6 +111,11 @@ class midiqote(Thread):
 
 	def set_transpose(self, event):
 		self.transpose = MIDDLE_C - event.GetInt()
+
+	def set_period(self, event):
+		self.period = event.GetInt()
+		assert(self.period > 0)
+		assert(self.period < len(SYMBOLS))
 
 
 class fancy_panel(wx.Panel):
@@ -176,9 +186,16 @@ if __name__ == "__main__":
 	middle_c = wx.SpinCtrl(panel, min=1, max=127, initial=60)
 	middle_c.Bind(wx.EVT_SPINCTRL, midi_thread.set_transpose)
 	middle_c_hbox.Add(middle_c)
-
 	middle_c_label = wx.StaticText(panel, style=wx.ALIGN_LEFT, label="Middle C")
 	middle_c_hbox.Add(middle_c_label, flag=wx.ALIGN_CENTER_VERTICAL)
+
+	period_hbox = wx.BoxSizer(wx.HORIZONTAL)
+	vbox.Add(period_hbox, border=10, flag=wx.TOP)
+	period = wx.SpinCtrl(panel, min=1, max=36, initial=12)
+	period.Bind(wx.EVT_SPINCTRL, midi_thread.set_period)
+	period_hbox.Add(period)
+	period_label = wx.StaticText(panel, style=wx.ALIGN_LEFT, label="Boundary Period")
+	period_hbox.Add(period_label, flag=wx.ALIGN_CENTER_VERTICAL)
 
 	panel.SetSizer(hbox)
 	frame.Show()
