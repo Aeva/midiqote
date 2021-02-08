@@ -69,7 +69,8 @@ class midiqote(Thread):
 				#print(f"Pressed F{self.debug_fkey(symbol)}")
 				win32api.keybd_event(symbol, 0, 0, 0)
 				self.release = symbol
-			self.last_ctrl = symbol
+			if not symbol in (F9_KEY, F10_KEY):
+				self.last_ctrl = symbol
 
 	def run(self):
 		self.device_changed.wait()
