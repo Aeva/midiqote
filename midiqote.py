@@ -1,5 +1,6 @@
 import time
 import string
+from math import floor, ceil
 from threading import Thread, Lock, Event
 import pygame.midi as midi
 import win32api, win32con, win32process # via package pywin32
@@ -18,6 +19,18 @@ MIDDLE_C = 60
 ROOT_NOTE = 48
 #SYMBOLS = string.ascii_lowercase + string.digits + "."
 SYMBOLS = list(range(0x41, 0x5B)) + list(range(0x30, 0x3A)) + [0xBE]
+F1_KEY = 0x70
+
+
+def bend_symbol(bend_value):
+	if bend_value > 0:
+		select = 4 - ceil(bend_value * 8)
+		return F1_KEY + select
+	elif bend_value < 0:
+		select = abs(floor(bend_value * 8)) + 3
+		return F1_KEY + select
+	else:
+		return None
 
 
 class midiqote(Thread):
@@ -38,6 +51,8 @@ class midiqote(Thread):
 		self.transpose = 0
 		self.octave = 0
 		self.period = 12
+
+		self.last_bend = None
 
 	def run(self):
 		self.device_changed.wait()
@@ -79,6 +94,15 @@ class midiqote(Thread):
 							time.sleep(0.03)
 						else:
 							win32api.keybd_event(symbol, 0, 2, 0)
+					elif message is PITCH_BEND:
+						bend = (((data2 << 7) | data1) / (2**14)) - 0.5
+						symbol = bend_symbol(bend)
+						if self.last_bend != symbol:
+							if self.last_bend is not None:
+								win32api.keybd_event(self.last_bend, 0, 2, 0)
+							self.last_bend = symbol
+						if symbol is not None:
+							win32api.keybd_event(symbol, 0, 0, 0)
 					elif self.use_rock_octave and message is SYSETM:
 						self.octave = 0 if (channel & 4) == 4 else 12
 
