@@ -20,17 +20,8 @@ ROOT_NOTE = 48
 #SYMBOLS = string.ascii_lowercase + string.digits + "."
 SYMBOLS = list(range(0x41, 0x5B)) + list(range(0x30, 0x3A)) + [0xBE]
 F1_KEY = 0x70
-
-
-def bend_symbol(bend_value):
-	if bend_value > 0:
-		select = 4 - ceil(bend_value * 8)
-		return F1_KEY + select
-	elif bend_value < 0:
-		select = abs(floor(bend_value * 8)) + 3
-		return F1_KEY + select
-	else:
-		return None
+F9_KEY = F1_KEY + 8
+F10_KEY = F9_KEY + 1
 
 
 class midiqote(Thread):
@@ -52,9 +43,33 @@ class midiqote(Thread):
 		self.octave = 0
 		self.period = 12
 
-		self.last_bend = None
-		self.last_mod = None
-		self.rest = None
+		self.release = None
+		self.last_ctrl = None
+		self.rest_selection = None
+
+	def party_select(self, bend_value):
+		if bend_value > 0:
+			return F1_KEY + (4 - ceil(bend_value * 8))
+		elif bend_value < 0:
+			return F1_KEY + abs(floor(bend_value * 8)) + 3
+		elif self.rest_selection is not None:
+			return F1_KEY + self.rest_selection
+		else:
+			return None
+
+	def debug_fkey(self, symbol):
+		if symbol is None or symbol < F1_KEY or symbol >= (F1_KEY + 12):
+			return "Error"
+		else:
+			return f"F{symbol - F1_KEY + 1}"
+
+	def ctrl_press(self, symbol):
+		if symbol != self.last_ctrl:
+			if symbol is not None:
+				#print(f"Pressed F{self.debug_fkey(symbol)}")
+				win32api.keybd_event(symbol, 0, 0, 0)
+				self.release = symbol
+			self.last_ctrl = symbol
 
 	def run(self):
 		self.device_changed.wait()
@@ -76,13 +91,9 @@ class midiqote(Thread):
 
 			# listen for midi events until a new midi device is set
 			while self.live and not self.device_changed.is_set():
-				while self.live and self.current_device.poll():
+				if self.live and self.current_device.poll():
 					packet, timestamp = self.current_device.read(1)[0]
 					status, data1, data2, data3 = packet
-
-					if self.last_mod is not None:
-						win32api.keybd_event(self.last_mod, 0, 2, 0)
-						self.last_mod = None
 
 					message = status >> 4
 					channel = status & 0xF
@@ -106,26 +117,25 @@ class midiqote(Thread):
 						value = data2 / 127.0
 						if control == 1:
 							self.rest_selection = 7 - round(value * 7)
-							self.last_mod = self.rest_selection + F1_KEY
-							win32api.keybd_event(self.last_mod, 0, 0, 0)
+							self.ctrl_press(self.rest_selection + F1_KEY)
 
 					elif message is PITCH_BEND:
 						bend = (((data2 << 7) | data1) / (2**14)) - 0.5
-						symbol = bend_symbol(bend)
-						if self.last_bend != symbol:
-							if self.last_bend is not None:
-								win32api.keybd_event(self.last_bend, 0, 2, 0)
-							self.last_bend = symbol
-						if symbol is not None:
-							win32api.keybd_event(symbol, 0, 0, 0)
-						else:
-							self.last_mod = self.rest_selection + F1_KEY
-							win32api.keybd_event(self.last_mod, 0, 0, 0)
+						symbol = None
+						if channel == 0:
+							symbol = self.party_select(bend)
+						elif channel == 1 and bend != 0.0:
+							symbol = F9_KEY if bend < 0 else F10_KEY
+						self.ctrl_press(symbol)
 
 					elif self.use_rock_octave and message is SYSETM:
 						self.octave = 0 if (channel & 4) == 4 else 12
 
 				time.sleep(0.001)
+				if self.release is not None:
+					#print(f"Released F{self.debug_fkey(self.release)}")
+					win32api.keybd_event(self.release, 0, 2, 0)
+					self.release = None
 
 			# close the current midi device
 			self.current_device.close()
