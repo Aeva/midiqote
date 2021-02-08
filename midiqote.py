@@ -54,6 +54,7 @@ class midiqote(Thread):
 
 		self.last_bend = None
 		self.last_mod = None
+		self.rest = None
 
 	def run(self):
 		self.device_changed.wait()
@@ -104,7 +105,8 @@ class midiqote(Thread):
 						control = data1
 						value = data2 / 127.0
 						if control == 1:
-							self.last_mod = 7 - round(value * 7) + F1_KEY
+							self.rest_selection = 7 - round(value * 7)
+							self.last_mod = self.rest_selection + F1_KEY
 							win32api.keybd_event(self.last_mod, 0, 0, 0)
 
 					elif message is PITCH_BEND:
@@ -116,6 +118,9 @@ class midiqote(Thread):
 							self.last_bend = symbol
 						if symbol is not None:
 							win32api.keybd_event(symbol, 0, 0, 0)
+						else:
+							self.last_mod = self.rest_selection + F1_KEY
+							win32api.keybd_event(self.last_mod, 0, 0, 0)
 
 					elif self.use_rock_octave and message is SYSETM:
 						self.octave = 0 if (channel & 4) == 4 else 12
