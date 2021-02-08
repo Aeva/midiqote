@@ -47,7 +47,17 @@ class midiqote(Thread):
 		self.last_ctrl = None
 		self.rest_selection = None
 
-	def party_select(self, bend_value):
+	def light_party_select(self, bend_value):
+		if bend_value > 0:
+			return F1_KEY + (2 - ceil(bend_value * 4))
+		elif bend_value < 0:
+			return F1_KEY + abs(floor(bend_value * 4)) + 1
+		elif self.rest_selection is not None:
+			return F1_KEY + self.rest_selection
+		else:
+			return None
+
+	def full_party_select(self, bend_value):
 		if bend_value > 0:
 			return F1_KEY + (4 - ceil(bend_value * 8))
 		elif bend_value < 0:
@@ -117,15 +127,18 @@ class midiqote(Thread):
 						control = data1
 						value = data2 / 127.0
 						if control == 1:
-							self.rest_selection = 7 - round(value * 7)
+							scale = 7 if channel == 0 else 3
+							self.rest_selection = scale - round(value * scale)
 							self.ctrl_press(self.rest_selection + F1_KEY)
 
 					elif message is PITCH_BEND:
 						bend = (((data2 << 7) | data1) / (2**14)) - 0.5
 						symbol = None
 						if channel == 0:
-							symbol = self.party_select(bend)
-						elif channel == 1 and bend != 0.0:
+							symbol = self.full_party_select(bend)
+						elif channel == 1:
+							symbol = self.light_party_select(bend)
+						elif channel == 2 and bend != 0.0:
 							symbol = F9_KEY if bend < 0 else F10_KEY
 						self.ctrl_press(symbol)
 
