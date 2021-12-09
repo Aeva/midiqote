@@ -42,6 +42,7 @@ class midiqote(Thread):
 		self.transpose = 0
 		self.octave = 0
 		self.period = 12
+		self.paused = False
 
 		self.release = None
 		self.last_ctrl = None
@@ -108,7 +109,7 @@ class midiqote(Thread):
 
 					message = status >> 4
 					channel = status & 0xF
-					if message is NOTE_ON or message is NOTE_OFF:
+					if not self.paused and (message is NOTE_ON or message is NOTE_OFF):
 						note = data1 + self.transpose + self.octave
 						while note < ROOT_NOTE:
 							note += self.period
@@ -175,6 +176,9 @@ class midiqote(Thread):
 
 	def set_rock_octave(self, event):
 		self.use_rock_octave = event.IsChecked()
+
+	def set_paused(self, event):
+		self.paused = event.IsChecked()
 
 	def set_transpose(self, event):
 		self.transpose = MIDDLE_C - event.GetInt()
@@ -263,6 +267,10 @@ if __name__ == "__main__":
 	period_hbox.Add(period)
 	period_label = wx.StaticText(panel, style=wx.ALIGN_LEFT, label="Boundary Period")
 	period_hbox.Add(period_label, flag=wx.ALIGN_CENTER_VERTICAL)
+
+	pause_checkbox = wx.CheckBox(panel, label="AFK (Ignore Keyboard Events)", style=wx.CHK_2STATE)
+	pause_checkbox.Bind(wx.EVT_CHECKBOX, midi_thread.set_paused)
+	vbox.Add(pause_checkbox, border=10, flag=wx.TOP)
 
 	panel.SetSizer(hbox)
 	frame.Show()
